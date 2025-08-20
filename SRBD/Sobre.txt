@@ -1,0 +1,93 @@
+** Neste documento, será listado os comandos SQL executados pelo sistema **
+
+ ------------------------------------------------------------------------
+
+Módulo de Correção de Dados Corrompidos (Could Not Read...)
+
+Criar Função:
+CREATE OR REPLACE FUNCTION chk(coluna text) RETURNS bool LANGUAGE plpgsql AS $$BEGIN BEGIN PERFORM encode(coluna::bytea, 'base64'); RETURN false; EXCEPTION WHEN OTHERS THEN RETURN true; END; END;$$;
+
+Verificar Linhas:
+SELECT COUNT(coluna) FROM tabela WHERE chk(coluna);
+
+Ajustar Tabela (Deletar linhas):
+DELETE FROM tabela WHERE chk(coluna);
+
+Remover Função:
+DROP FUNCTION chk(text);
+
+ ------------------------------------------------------------------------
+
+Módulo de Identificação e Correção de Duplicatas ( DuplicateKey )
+
+Verificar Duplicatas:
+SELECT COUNT(*) FROM tabela WHERE ctid IN (SELECT ctid FROM (SELECT ctid, ROW_NUMBER() OVER (PARTITION BY ID ORDER BY ctid) AS row_num FROM tabela) AS subquery WHERE row_num > 1);
+
+Ajustar Tabela (Excluir duplicatas):
+DELETE FROM tabela WHERE ctid IN (SELECT ctid FROM (SELECT ctid, ROW_NUMBER() OVER (PARTITION BY ID ORDER BY ctid) AS row_num FROM tabela) AS subquery WHERE row_num > 1);
+
+Ajustar Sequence:
+SELECT setval('tabela_ID_seq', (SELECT MAX(ID) FROM tabela), true);
+
+ ------------------------------------------------------------------------
+
+Módulo de Sincronização de Visibilidade de Dados ( Uncommitted xmin )
+
+Sincronizar Visibilidade (Ajustar Xmin):
+UPDATE schema.tabela SET coluna = coluna;
+
+ ------------------------------------------------------------------------
+
+Módulo de Otimização Completa do PostgreSQL
+
+ANALYZE em todo o banco:
+ANALYZE;
+
+REINDEX em todo o banco:
+REINDEX DATABASE "nomedobanco";
+
+VACUUM FULL em todo o banco:
+VACUUM FULL;
+
+Otimizar PostgreSQL:
+ALTER SYSTEM SET max_connections = ...
+
+ALTER SYSTEM SET shared_buffers = ...
+
+ALTER SYSTEM SET effective_cache_size = ...
+
+ALTER SYSTEM SET maintenance_work_mem = ...
+
+ALTER SYSTEM SET checkpoint_completion_target = 0.9
+
+ALTER SYSTEM SET wal_buffers = ...
+
+ALTER SYSTEM SET min_wal_size = '1024MB'
+
+ALTER SYSTEM SET max_wal_size = '4096MB'
+
+ALTER SYSTEM SET default_statistics_target = 100
+
+ALTER SYSTEM SET random_page_cost = 4.0
+
+ALTER SYSTEM SET work_mem = ...
+
+ALTER SYSTEM SET huge_pages = 'off'
+
+ALTER SYSTEM SET max_worker_processes = ... (PostgreSQL 9.6+)
+
+ALTER SYSTEM SET max_parallel_workers_per_gather = ... (PostgreSQL 9.6+)
+
+ALTER SYSTEM SET max_parallel_workers = ... (PostgreSQL 9.6+)
+
+ALTER SYSTEM SET max_parallel_maintenance_workers = ... (PostgreSQL 10+)
+
+ ------------------------------------------------------------------------
+
+Módulo de Otimização por Schema
+
+ANALYZE no Schema:
+ANALYZE SCHEMA "nomeschema";
+
+REINDEX do Schema:
+REINDEX SCHEMA "nomeschema";
